@@ -23,5 +23,8 @@ int main(int argc, char* argv[]){
     CheckCase("casecorrectpath.cpp");
     CheckCase("CaseCorrectPath.H");
     CheckCase("CASECORRECTPATH.CPP");
-    getchar();
+    #ifdef _WIN32
+        printf("\nTest completed, press 'enter' to quit\n");
+        getchar();
+    #endif
 }
