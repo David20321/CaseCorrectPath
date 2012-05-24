@@ -15,7 +15,7 @@ int CountCharsInString(const char* str, char the_char){
     int count = 0;
     int str_length = strlen(str);
     for(int i=0; i<str_length; ++i){
-        if(str[i] == '/'){
+        if(str[i] == the_char){
             ++count;
         }
     }
@@ -28,7 +28,7 @@ int FindNthCharFromBack(const char* str, char the_char, int n){
     int count = 0;
     int str_length = strlen(str);
     for(int i= str_length-1; i>=0; --i){
-        if(str[i] == '/'){
+        if(str[i] == the_char){
             ++count;
             if(count == n){
                 return i;
