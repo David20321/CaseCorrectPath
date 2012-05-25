@@ -28,12 +28,13 @@ int FindNthCharFromBack(std::string& str, char the_char, int n){
 
 std::string GetCaseCorrectPath(std::string input_path){
     #ifdef _WIN32 // Correct case by converting to short path and back to long
-        long kPathBufferSize = GetShortPathName(input_path, NULL, 0);
-        char short_path[kPathBufferSize];
-        char correct_case_buf[kPathBufferSize];
+        long kPathBufferSize = GetLongPathName(input_path.c_str(), NULL, 0);
+        char* short_path = new char[kPathBufferSize];
+        char* correct_case_buf = new char[kPathBufferSize];
         GetShortPathName(input_path.c_str(), short_path, kPathBufferSize);
-        GetLongPathName(short_path, correct_path, kPathBufferSize);
-        return std::string(correct_path);
+        GetLongPathName(short_path, correct_case_buf, kPathBufferSize);
+        delete short_path;
+        return std::string(correct_case_buf);
     #else  // Correct case using realpath() and cut off working directory
         std::ptrdiff_t num_dirs = std::count(input_path.begin(), input_path.end(), '/');
         std::string path(realpath(input_path.c_str(), NULL));
