@@ -1,66 +1,108 @@
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 #ifdef _WIN32
     #include <windows.h>
 #else
-    #include <stdlib.h>
+    #include <algorithm>
+    #include <cstdlib>
+    #include <dirent.h> 
 #endif
 
 namespace {
 
-static const int kPathBufferSize = 1024;
 
-// Return the number of instances of the_char in str
-int CountCharsInString(const char* str, char the_char){
-    int count = 0;
-    int str_length = strlen(str);
-    for(int i=0; i<str_length; ++i){
-        if(str[i] == the_char){
-            ++count;
-        }
+std::string BuildRealPath(std::string& input_path) {
+    std::string path = "";
+    size_t i = 0;
+    std::string next_child = ".";
+    bool first = true;
+    
+    if(input_path.compare(0, next_child.length(), "./") == 0) {
+        i += 2;
+        path = "./";
+    } else if(input_path[0] == '/') {
+        i += 1;
+        path = "/";
+        next_child = "/";
     }
-    return count;
-}
+    
+    bool done = false;
+    for(;!done && i < input_path.length();) {
+        DIR *dp;
+        struct dirent *ep;
+        
+        std::string dir;
 
-// Return the index of the nth instance of the_char in str, starting from the back
-// Returns -1 if there is no nth instance
-int FindNthCharFromBack(const char* str, char the_char, int n){
-    int count = 0;
-    int str_length = strlen(str);
-    for(int i= str_length-1; i>=0; --i){
-        if(str[i] == the_char){
-            ++count;
-            if(count == n){
-                return i;
+        if(first) {
+            dir = next_child;
+            first = false;
+        } else {
+            dir = path;
+        }
+        dp = opendir(dir.c_str());
+        
+        if(!dp) {
+            return ""; // Unexpected, raise exception?
+        }
+        
+        size_t dir_end = input_path.find_first_of('/', i + 1);
+        
+        if(dir_end == std::string::npos) {
+            next_child = input_path.substr(i);
+            done = true;
+        } else {
+            next_child = input_path.substr(i, dir_end - i) ;
+            i = dir_end + 1;
+        }
+        
+        std::transform(next_child.begin(), next_child.end(), next_child.begin(), ::tolower);
+        
+        bool found = false;
+        while(!found && (ep = readdir (dp))) {
+            std::string cur(ep->d_name);
+            std::transform(cur.begin(), cur.end(), cur.begin(), ::tolower);
+            if(next_child == cur) {
+                found = true;
+                path += ep->d_name;
             }
+            free(ep);
+        }
+        closedir(dp);
+        free(dp);
+        
+        
+        if(!found) {
+            return ""; // Unexpected, raise exception?
+        }
+        
+        if(!done) {
+            path += "/";
         }
     }
-    return -1;
+    
+    return path;    
+    
 }
 
-void GetCaseCorrectPath(const char* input_path, char* correct_path){
+std::string GetCaseCorrectPath(std::string input_path){
     #ifdef _WIN32 // Correct case by converting to short path and back to long
-        char short_path[kPathBufferSize];
-        GetShortPathName(input_path, short_path, kPathBufferSize);
-        GetLongPathName(short_path, correct_path, kPathBufferSize);
-    #else  // Correct case using realpath() and cut off working directory
-        int num_dirs = CountCharsInString(input_path, '/');
-        char path[kPathBufferSize];
-        realpath(input_path, path);
-        char *cut_path = &path[FindNthCharFromBack(path,'/',num_dirs+1)+1];
-        strcpy(correct_path, cut_path);
+        long kPathBufferSize = GetLongPathName(input_path.c_str(), NULL, 0);
+        char* short_path = new char[kPathBufferSize];
+        char* correct_case_buf = new char[kPathBufferSize];
+        GetShortPathName(input_path.c_str(), short_path, kPathBufferSize);
+        GetLongPathName(short_path, correct_case_buf, kPathBufferSize);
+        std::string corrected = std::string(correct_case_buf);
+        delete short_path;
+        delete correct_case_buf;
+        return corrected;
+    #else  // Correct case by traversing the directory(s) manually
+        return BuildRealPath(input_path);
     #endif
 }
 
 } // namespace ""
 
 bool IsPathCaseCorrect(const std::string& input_path, std::string *correct_case){
-    char correct_case_buf[kPathBufferSize];
-    GetCaseCorrectPath(input_path.c_str(), correct_case_buf);
-    *correct_case = correct_case_buf;
-    if(input_path != *correct_case){
-        return false;
-    } else {
-        return true;
-    }
+    *correct_case = GetCaseCorrectPath(input_path);
+    return (input_path == *correct_case);
 }
