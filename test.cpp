@@ -20,9 +20,13 @@ void CheckCase(const char* path){
 }
 
 int main(int argc, char* argv[]){
-    CheckCase("casecorrectpath.cpp");
-    CheckCase("CaseCorrectPath.H");
-    CheckCase("CASECORRECTPATH.CPP");
+    CheckCase("/mnt/DATA/TEST");
+    CheckCase("/mnt/data/TEST");
+    CheckCase("./DATA/test");
+    CheckCase("./data/TEST");
+    CheckCase("DATA/test");
+    CheckCase("data/TEST");
+    
     #ifdef _WIN32
         printf("\nTest completed, press 'enter' to quit\n");
         getchar();
