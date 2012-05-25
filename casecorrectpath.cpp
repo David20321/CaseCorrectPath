@@ -33,11 +33,15 @@ std::string GetCaseCorrectPath(std::string input_path){
         char* correct_case_buf = new char[kPathBufferSize];
         GetShortPathName(input_path.c_str(), short_path, kPathBufferSize);
         GetLongPathName(short_path, correct_case_buf, kPathBufferSize);
+        std::string corrected = std::string(correct_case_buf);
         delete short_path;
-        return std::string(correct_case_buf);
+        delete correct_case_buf;
+        return corrected;
     #else  // Correct case using realpath() and cut off working directory
         std::ptrdiff_t num_dirs = std::count(input_path.begin(), input_path.end(), '/');
-        std::string path(realpath(input_path.c_str(), NULL));
+        char* real_path = realpath(input_path.c_str(), NULL);
+        std::string path(real_path);
+        free(real_path);
         return path.substr(FindNthCharFromBack(path,'/',num_dirs+1)+1);
     #endif
 }
