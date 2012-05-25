@@ -3,8 +3,10 @@
 #ifdef _WIN32
     #include <windows.h>
 #else
+    #include <unistd.h>
     #include <algorithm>
     #include <cstdlib>
+    #include <sstream>
 #endif
 
 namespace {
@@ -37,11 +39,17 @@ std::string GetCaseCorrectPath(std::string input_path){
         delete short_path;
         delete correct_case_buf;
         return corrected;
-    #else  // Correct case using realpath() and cut off working directory
+    #else  // Ask /proc for a symlink to the actual file and use real_path to extract
+        FILE* f = fopen(input_path.c_str(), "r");
+        pid_t pid = getpid();
         std::ptrdiff_t num_dirs = std::count(input_path.begin(), input_path.end(), '/');
-        char* real_path = realpath(input_path.c_str(), NULL);
-        std::string path(real_path);
-        free(real_path);
+        std::stringstream proc_path;
+        char* actual_path;
+        proc_path << "/proc/" << pid << "/fd/" << fileno(f);
+        actual_path = realpath(proc_path.str().c_str(), NULL);
+        fclose(f);
+        std::string path(actual_path);
+        free(actual_path);
         return path.substr(FindNthCharFromBack(path,'/',num_dirs+1)+1);
     #endif
 }
